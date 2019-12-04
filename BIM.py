@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[22]:
-
-
 from collections import defaultdict
 from math import log, sqrt
 import re
