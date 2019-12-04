@@ -1,2 +1,2 @@
-# Binary-Independence-Model-
-Python implementation of Binary Independence Model (BIM) system for information retrie
+# Binary Independence Model
+Python implementation of Binary Independence Model (BIM) system for information retrieval 
