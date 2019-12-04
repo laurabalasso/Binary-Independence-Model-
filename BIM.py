@@ -64,11 +64,8 @@ def make_inverted_index(articles):
 
 def term_document_matrix(articles):
     """
-    Given a set of articles we generate a term-document matrix (containing only
-    Boolean values) using a numpy array. Notice that for large document
-    collections this matrix can be extremely large.
-    We also return the list of terms used, which can be used to answer
-    new queries.
+    Given a set of articles we generate a term-document matrix 
+    with value 1 if the term is in the document and 0 otherwise
     """
     index = make_inverted_index(articles)
     terms = list(index.keys())
