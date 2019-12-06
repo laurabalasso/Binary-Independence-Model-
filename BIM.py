@@ -6,7 +6,6 @@ import time
 import sys
 
 
-# ## Import the data ad create the inverted index
 
 def import_dataset():
     """
@@ -29,7 +28,6 @@ def import_dataset():
 
 
 
-
 def remove_stop_words(corpus):
    '''
    This function removes from the corpus all the stop words present in the file TIME.STP
@@ -40,8 +38,6 @@ def remove_stop_words(corpus):
    for i in range(0,len(corpus)):
        corpus[i] = [x for x in corpus[i] if x not in stop_w]
    return corpus 
-
-
 
 
 def make_inverted_index(corpus):
@@ -57,6 +53,8 @@ def make_inverted_index(corpus):
             index[term].add(docid)
     return index
 
+
+# ### Union of two posting lists
 
 
 def posting_lists_union(pl1, pl2):
@@ -94,10 +92,8 @@ def DF(term, index):
     return len(index[term])
 
 
-
 def IDF(term, index, corpus):
     return log(len(corpus)/DF(term, index))
-
 
 
 def RSV_weights(corpus,index):
@@ -113,6 +109,7 @@ def RSV_weights(corpus,index):
     return w
     
 
+
 # ## BIM Class
 
 
@@ -122,44 +119,44 @@ class BIM():
     '''
     
     def __init__(self, corpus):
+
         self.articles = corpus
         self.index = make_inverted_index(corpus)
         self.weights = RSV_weights(self.articles, self.index)
         self.ranked = []
         self.query_text = ''
-    
-    
+        
+        
     def RSV_doc_query(self, doc_id, query):
         '''
-        This function computes the RSV for a given couple document - query
+        This function computes the RSV for a given couple document - query 
         using the precomputed weights
         '''
         score = 0
         doc = self.articles[doc_id]
         for term in doc:
             if term in query:
-                score += self.weights[term]
-        return score
+                score += self.weights[term]     
+        return score 
     
-    
+        
     def ranking(self, query):
         '''
-        Auxiliary function for the function answer query. Computes the score only
-        for documents that are in the posting list of al least one term in the query
+        Auxiliary function for the function answer query. Computes the score only for documents
+        that are in the posting list of al least one term in the query
         '''
-        
+
         docs = []
-        for term in self.index:
+        for term in self.index: 
             if term in query:
                 docs = posting_lists_union(docs, self.index[term])
-    
+                
         scores = []
         for doc in docs:
             scores.append((doc, self.RSV_doc_query(doc, query)))
-
+        
         self.ranked = sorted(scores, key=lambda x: x[1], reverse = True)
         return self.ranked
-    
     
     
     def answer_query(self, query_text):
@@ -179,12 +176,13 @@ class BIM():
             text = " ".join(article)
             print(f"Article {i + 1}, score: {ranking[i][1]}")
             print(text, '\n')
+              
             
             
     def relevance_feedback(self, *args):
         '''
-        Function that implements relevance feedback for the last query answered.
-        The weights are recomputed based on a set of relevant documents provided by the user
+        Function that implements relevance feedback for the last query formulated.
+        The set of relevant documents is given by the user     
         '''
         if(self.query_text == ''):
             sys.exit('Cannot get feedback before a query is formulated.')
@@ -201,20 +199,19 @@ class BIM():
         
         N = len(self.articles)
         N_rel = len(relevant_idx)
-        
+
         for term in self.index.keys():
             vri = 0
             for doc in relevant_docs:
                 if term in doc:
                     vri += 1
             p = (vri + 0.5) /( N_rel + 1)
-            u = (DF(term, self.index) - vri + 0.5) / (N - N_rel +1) 
+            u = (DF(term, self.index) - vri + 0.5) / (N - N_rel +1)
             self.weights[term] = log((1-u)/u) + log(p/(1-p))
         
         self.answer_query(self.query_text)
         
 
-            
 
 # Example of usage
 
@@ -222,6 +219,7 @@ class BIM():
 # bim  = BIM(articles)
 # bim.answer_query('Italy and Great Britain fight the enemy')
 # bim.relevance_feedback(5,6,8)
+
 
 
 
