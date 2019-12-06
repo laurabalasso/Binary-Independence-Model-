@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[22]:
-
-
 from collections import defaultdict
 from math import log, sqrt
 import re
@@ -50,61 +44,50 @@ def remove_stop_words(corpus):
 
 
 
-def make_inverted_index(articles):
+def make_inverted_index(corpus):
     """
     This function builds an inverted index as an hash table (dictionary)
     where the keys are the terms and the values are ordered lists of
     docIDs containing the term.
     """
-    articles = remove_stop_words(articles)
+    corpus = remove_stop_words(corpus)
     index = defaultdict(set)
-    for docid, article in enumerate(articles):
+    for docid, article in enumerate(corpus):
         for term in article:
             index[term].add(docid)
     return index
 
 
-# ## Transform documents and queries in boolean vectors
 
-
-
-def term_document_matrix(articles):
+def posting_lists_union(pl1, pl2):
     """
-    Given a set of articles we generate a term-document matrix (containing only
-    Boolean values) using a numpy array. Notice that for large document
-    collections this matrix can be extremely large.
-    We also return the list of terms used, which can be used to answer
-    new queries.
+    Returns a new posting list resulting from the union of this
+    one and the one passed as argument.
     """
-    index = make_inverted_index(articles)
-    terms = list(index.keys())
-    mat = np.zeros((len(terms), len(articles)))
-    for i, t in enumerate(terms):
-        posting_list = index[t]
-        for j in posting_list:
-            mat[i][j] = 1
-    return mat
-
-
-
-
-def query_to_vector(query_string, index):
-    '''
-    This function transforms a free form text query into a boolean vector 
-    with i-th value 1 if the the i-th term in the index is present in the query
-    zero otherwise 
-    '''
-    query = query_string.upper().split()
-    terms = index.keys()
-    query_vector = np.zeros((len(terms),))
-    for i,t in enumerate(terms):
-        if t in query:
-            query_vector[i] = 1
-    return query_vector
+    pl1 = sorted(list(pl1))
+    pl2 = sorted(list(pl2))
+    union = []
+    i = 0
+    j = 0
+    while (i < len(pl1) and j < len(pl2)):
+        if (pl1[i] == pl2[j]):
+            union.append(pl1[i])
+            i += 1
+            j += 1
+        elif (pl1[i] < pl2[j]):
+            union.append(pl1[i])
+            i += 1
+        else:
+            union.append(pl2[j])
+            j += 1
+    for k in range(i, len(pl1)):
+        union.append(pl1[k])
+    for k in range(j, len(pl2)):
+        union.append(pl2[k])
+    return union
 
 
 # ## Precomputing weights
-
 
 
 def DF(term, index):
@@ -112,10 +95,8 @@ def DF(term, index):
 
 
 
-
 def IDF(term, index, corpus):
     return log(len(corpus)/DF(term, index))
-
 
 
 
@@ -132,21 +113,6 @@ def RSV_weights(corpus,index):
     return w
     
 
-
-# ## Ranking function
-
-
-def RSV_dq(doc_vector, query_vector, weights):
-    '''
-    This function computes the RSV for a given couple document - query 
-    using the precomputed weights
-    '''
-    tot = 0
-    for i,term in enumerate(weights.keys()):
-        tot += doc_vector[i] * query_vector[i] * weights[term]
-    return tot
-
-
 # ## BIM Class
 
 
@@ -158,35 +124,52 @@ class BIM():
     def __init__(self, corpus):
         self.articles = corpus
         self.index = make_inverted_index(corpus)
-        self.term_doc_matrix = term_document_matrix(corpus)
         self.weights = RSV_weights(self.articles, self.index)
         self.ranked = []
         self.query_text = ''
-        
-        
+    
+    
+    def RSV_doc_query(self, doc_id, query):
+        '''
+        This function computes the RSV for a given couple document - query
+        using the precomputed weights
+        '''
+        score = 0
+        doc = self.articles[doc_id]
+        for term in doc:
+            if term in query:
+                score += self.weights[term]
+        return score
+    
+    
     def ranking(self, query):
         '''
-        Auxiliary function for the function answer query. Computes the scores for each
-        document in the corpus using the precomputed weights.
+        Auxiliary function for the function answer query. Computes the score only
+        for documents that are in the posting list of al least one term in the query
         '''
         
-        query_vector = query_to_vector(query, self.index)
-        
+        docs = []
+        for term in self.index:
+            if term in query:
+                docs = posting_lists_union(docs, self.index[term])
+    
         scores = []
-        for i in range(len(self.articles)):
-            scores.append((i, RSV_dq(self.term_doc_matrix[:,i], query_vector, self.weights)))
-        
+        for doc in docs:
+            scores.append((doc, self.RSV_doc_query(doc, query)))
+
         self.ranked = sorted(scores, key=lambda x: x[1], reverse = True)
         return self.ranked
     
     
-    def answer_query(self, query):
+    
+    def answer_query(self, query_text):
         '''
         Function to answer a free text query. Shows the first 30 words of the
         15 most relevant documents.
         '''
         
-        self.query_text = query
+        self.query_text = query_text
+        query =  query_text.upper().split()
         ranking = self.ranking(query)
         
         for i in range(0, 15):
@@ -201,7 +184,7 @@ class BIM():
     def relevance_feedback(self, *args):
         '''
         Function that implements relevance feedback for the last query answered.
-        The weights are recomputed based on a set of relevant documents provided by the user 
+        The weights are recomputed based on a set of relevant documents provided by the user
         '''
         if(self.query_text == ''):
             sys.exit('Cannot get feedback before a query is formulated.')
