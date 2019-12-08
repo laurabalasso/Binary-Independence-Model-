@@ -2,7 +2,6 @@ from collections import defaultdict
 from math import log, sqrt
 import re
 import numpy as np
-import time
 import sys
 from copy import deepcopy
 
@@ -128,7 +127,7 @@ class BIM():
         self.weights = RSV_weights(self.articles, self.index)
         self.ranked = []
         self.query_text = ''
-        
+        self.N_retrieved = 0
         
     def RSV_doc_query(self, doc_id, query):
         '''
@@ -208,7 +207,9 @@ class BIM():
         
         ranking = new_ranking
         
-        for i in range(0, 15):
+        self.N_retrieved = 15
+        
+        for i in range(0, self.N_retrieved):
             article = self.original_corpus[ranking[i][0]]
             if (len(article) > 30):
                 article = article[0:30]
@@ -223,7 +224,8 @@ class BIM():
         The set of relevant documents is given by the user     
         '''
         if(self.query_text == ''):
-            sys.exit('Cannot get feedback before a query is formulated.')
+            print('Cannot get feedback before a query is formulated.')
+            return
         
         relevant_idx = list(args)
         
@@ -234,9 +236,43 @@ class BIM():
         self.recompute_weights(relevant_idx,query)
         
         self.answer_query(self.query_text)
-        
-     
     
+    
+    
+    def read_document(self,rank_num):
+        '''
+        Function that allows the user to select a document among the ones returned 
+        by answer_query and read the whole text
+        '''
+        if(self.query_text == ''):
+            print('Cannot select a document before a query is formulated.')
+            return
+            
+        article = self.original_corpus[self.ranked[rank_num - 1][0]]
+        text = " ".join(article)
+        print(f"Article {rank_num}, score: {self.ranked[rank_num][1]}")
+        print(text, '\n')
+        
+        
+    def show_more(self):
+        '''
+        Function that allows the user to see more 10 retrieved documents
+        '''
+        
+        if(self.N_retrieved + 10 > len(self.ranked)):
+            print('No more documents available')
+            return 
+        
+        for i in range(self.N_retrieved, self.N_retrieved+10):
+            article = self.original_corpus[self.ranked[i][0]]
+            if (len(article) > 30):
+                article = article[0:30]
+            text = " ".join(article)
+            print(f"Article {i + 1}, score: {self.ranked[i][1]}")
+            print(text, '\n')
+        
+        self.N_retrieved += 10 
+        
 
 
 
@@ -246,4 +282,6 @@ class BIM():
 # bim  = BIM(articles)
 # bim.answer_query('Italy and Great Britain fight the enemy')
 # bim.relevance_feedback(5,6,8)
+# bim.show_more()
+# bim.read_document(2)
 
