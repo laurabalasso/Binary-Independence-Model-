@@ -61,8 +61,8 @@ def make_inverted_index(corpus):
 
 def posting_lists_union(pl1, pl2):
         """
-        Returns a new posting list resulting from the union of this
-        one and the one passed as argument.
+        Returns a new posting list resulting from the union of the
+        two lists passed as arguments.
         """
         pl1 = sorted(list(pl1))
         pl2 = sorted(list(pl2))
@@ -91,16 +91,22 @@ def posting_lists_union(pl1, pl2):
 
 
 def DF(term, index):
+    '''
+    Function computing Document Frequency for a term.
+    '''
     return len(index[term])
 
 
 def IDF(term, index, corpus):
+    '''
+    Function computing Inverse Document Frequency for a term.
+    '''
     return log(len(corpus)/DF(term, index))
 
 
 def RSV_weights(corpus,index):
     '''
-    This function precomputes the Retrieval Status Value weights 
+    This function precomputes the Retrieval Status Value weights
     for each term in the index
     '''
     N = len(corpus)
@@ -128,10 +134,12 @@ class BIM():
         self.ranked = []
         self.query_text = ''
         self.N_retrieved = 0
+    
+    
         
     def RSV_doc_query(self, doc_id, query):
         '''
-        This function computes the RSV for a given couple document - query 
+        This function computes the Retrieval Status Value for a given couple document - query
         using the precomputed weights
         '''
         score = 0
@@ -139,12 +147,13 @@ class BIM():
         for term in doc:
             if term in query:
                 score += self.weights[term]     
-        return score 
+        return score
+
     
         
     def ranking(self, query):
         '''
-        Auxiliary function for the function answer query. Computes the score only for documents
+        Auxiliary function for the function answer_query. Computes the score only for documents
         that are in the posting list of al least one term in the query
         '''
 
@@ -161,9 +170,11 @@ class BIM():
         return self.ranked
     
     
+    
     def recompute_weights(self, relevant_idx, query):
         '''
-        Auxiliary function for the relevance feedback.
+        Auxiliary function for relevance_feedback function and
+        for the pseudo relevance feedback in answer_query function.
         Recomputes the weights, only for the terms in the query
         based on a set of relevant documents.
         '''
@@ -184,6 +195,7 @@ class BIM():
             p = (vri + 0.5) /( N_rel + 1)
             u = (DF(term, self.index) - vri + 0.5) / (N - N_rel +1) 
             self.weights[term] = log((1-u)/u) + log(p/(1-p))
+
             
     
     def answer_query(self, query_text):
@@ -209,6 +221,8 @@ class BIM():
         
         self.N_retrieved = 15
         
+        ## print retrieved documents
+        
         for i in range(0, self.N_retrieved):
             article = self.original_corpus[ranking[i][0]]
             if (len(article) > 30):
@@ -216,12 +230,14 @@ class BIM():
             text = " ".join(article)
             print(f"Article {i + 1}, score: {ranking[i][1]}")
             print(text, '\n')
-            
+
+
+
             
     def relevance_feedback(self, *args):
         '''
         Function that implements relevance feedback for the last query formulated.
-        The set of relevant documents is given by the user     
+        The set of relevant documents is given by the user through a set of indexes
         '''
         if(self.query_text == ''):
             print('Cannot get feedback before a query is formulated.')
