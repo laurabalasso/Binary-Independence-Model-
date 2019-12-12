@@ -188,13 +188,14 @@ class BIM():
         N_rel = len(relevant_idx)
         
         for term in query:
-            vri = 0
-            for doc in relevant_docs:
-                if term in doc:
-                    vri += 1
-            p = (vri + 0.5) /( N_rel + 1)
-            u = (DF(term, self.index) - vri + 0.5) / (N - N_rel +1) 
-            self.weights[term] = log((1-u)/u) + log(p/(1-p))
+            if term in self.weights.keys():
+                vri = 0
+                for doc in relevant_docs:
+                    if term in doc:
+                        vri += 1
+                p = (vri + 0.5) /( N_rel + 1)
+                u = (DF(term, self.index) - vri + 0.5) / (N - N_rel +1)
+                self.weights[term] = log((1-u)/u) + log(p/(1-p))
 
             
     
@@ -231,6 +232,7 @@ class BIM():
             print(f"Article {i + 1}, score: {ranking[i][1]}")
             print(text, '\n')
 
+        self.weights = RSV_weights(self.articles, self.index)
 
 
             
